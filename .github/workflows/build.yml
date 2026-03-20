@@ -1,48 +1,45 @@
-name: Build and Update README
+name: Build and Comment PR
 
 on:
-  push:
+  pull_request:
     branches: [ main ]
-  workflow_dispatch: # Позволяет запускать вручную
+  workflow_dispatch:
 
 permissions:
-  contents: write
+  pull-requests: write  # Обязательно: разрешаем боту писать в PR
 
 jobs:
-  build_and_update:
+  check_optimization:
     runs-on: windows-latest
     steps:
       - uses: actions/checkout@v4
-      
+
       - name: Configure and Build
         run: |
           cmake -S . -B build -DCMAKE_BUILD_TYPE=Release
           cmake --build build --config Release
-          
-      - name: Run and Update README
+
+      - name: Run Optimisation
+        id: run_opt
         shell: bash
         run: |
-          # Сохраняем чистый заголовок README
-          echo "# BPLA Optimisation" > README.md
-          echo "Проект автоматической оптимизации параметров БПЛА." >> README.md
+          # Запускаем и сохраняем вывод в переменную окружения
+          ./build/Release/BPLA_Optimisation.exe > result.txt
           
-          # Запускаем программу и дописываем её вывод в README
-          ./build/Release/BPLA_Optimisation.exe >> README.md
-          
-      - name: Commit and Push changes
-        env:
-          MY_TOKEN: ${{ secrets.MY_GITHUB_TOKEN }}
-        run: |
-          git config --global user.name "github-actions[bot]"
-          git config --global user.email "github-actions[bot]@users.noreply.github.com"
-          git add README.md
-          
-          # Проверяем, есть ли что коммитить
-          $gitStatus = git status --porcelain
-          if ($gitStatus) {
-              git commit -m "docs: auto-update optimization results [skip ci]"
-              # Пушим напрямую в main, используя ваш секретный токен
-              git push "https://x-access-token:${env:MY_TOKEN}@github.com/${env:GITHUB_REPOSITORY}.git" HEAD:main
-          } else {
-              Write-Host "No changes to README.md"
-          }
+          # Записываем содержимое файла в специальный буфер GitHub
+          echo "OPT_RESULT<<EOF" >> $GITHUB_ENV
+          cat result.txt >> $GITHUB_ENV
+          echo "EOF" >> $GITHUB_ENV
+
+      - name: Post Comment to PR
+        uses: peter-evans/create-or-update-comment@v4
+        with:
+          issue-number: ${{ github.event.pull_request.number }}
+          body: |
+            ### 🤖 Отчет о результатах оптимизации
+            По результатам прогона в режиме **Release**:
+            
+            ${{ env.OPT_RESULT }}
+            
+            ---
+            _Сборка выполнена автоматически. Если результат F вас устраивает, PR можно мержить._
