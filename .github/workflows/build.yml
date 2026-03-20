@@ -1,0 +1,59 @@
+name: Build and Run BPLA Optimisation
+
+on:
+  push:
+    branches: [ master, main ]
+  pull_request:
+    branches: [ master, main ]
+
+# Разрешаем экшену писать комментарии в PR
+permissions:
+  pull-requests: write
+
+jobs:
+  build_windows:
+    runs-on: windows-latest
+
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+
+    - name: Configure CMake
+      run: cmake -S . -B build -DCMAKE_BUILD_TYPE=Release
+
+    - name: Build Project
+      run: cmake --build build --config Release
+
+    - name: Run Optimisation
+      id: run_opt
+      shell: bash
+      run: |
+        # Запускаем и сохраняем вывод
+        ./build/Release/BPLA_Optimisation.exe > result.txt
+        # Ограничиваем вывод для комментария (берем последние 15 строк, если лог большой)
+        echo "OPT_OUTPUT<<EOF" >> $GITHUB_ENV
+        cat result.txt >> $GITHUB_ENV
+        echo "EOF" >> $GITHUB_ENV
+
+    - name: Post Comment to PR
+      if: github.event_name == 'pull_request'
+      uses: peter-evans/create-or-update-comment@v3
+      with:
+        issue-number: ${{ github.event.pull_request.number }}
+        body: |
+          ### 🤖 Результаты оптимизации для PR #${{ github.event.pull_request.number }}
+          **Статус:** ✅ Успешно скомпилировано и запущено.
+          
+          ```text
+          ${{ env.OPT_OUTPUT }}
+          ```
+          _Этот комментарий создан автоматически GitHub Actions._
+
+    - name: Report Failure
+      if: failure() && github.event_name == 'pull_request'
+      uses: peter-evans/create-or-update-comment@v3
+      with:
+        issue-number: ${{ github.event.pull_request.number }}
+        body: |
+          ### ❌ Ошибка сборки
+          К сожалению, предложенные изменения привели к ошибке компиляции или выполнения. Проверьте логи во вкладке **Actions**.
