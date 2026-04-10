@@ -40,16 +40,18 @@ int main() {
     // Данные SR200 из файла
     AeroConstants sr200 = {
         0.1946, 0.0883, 47.272, 6.776, 1.742, 176.54, 13.81, 0.108, 0.859, 7.12, // Аэродинамика
-        3.9, 2.0, 15.0, 0.5 // alpha0, omega_y*, t_T, epsilon
+        3.9, 2.0, 15.0, 0.01 // alpha0, omega_y*, t_T, epsilon
     };
 
     // 2. Настройка параметров SOFAMA
-    // M = 50 (агентов)
-    // Q = 0.3 (тяга к лучшему решению)
-    // N = 7 (размерность вектора a: a0...a6)
-    // gamma = 1.0 (масштаб Коши; 0.01 был слишком мал для начала поиска)
-    // K = 2000 (итераций)
-    SofamaParams s_p = {50, 0.3, 7, 1.0, 2000};
+    // struct SofamaParams {
+    //     int M;       // 4) M - размер начальной популяции
+    //     double Q;    // 5) Q (или G) – mutation intensity threshold
+    //     int N;       // 1) n - размерность пространства
+    //     double gamma;// 7) γ - population membership threshold
+    //     int K;       // 9) K – total number of steps
+    // };
+    SofamaParams s_p = {50, 0.7, 7, 0.01, 10000};
     
     auto func = [&](const std::vector<double>& a) {
         return calculateF(a, sr200);
@@ -60,8 +62,8 @@ int main() {
     std::cout << "Оптимальный вектор a: ";
     for(double x : best_a) std::cout << std::fixed << std::setprecision(4) << x << " ";
     
-    std::cout << "\nЗначение критерия F: " << calculateF(best_a, sr200);
-    
+    double final_F = calculateF(best_a, sr200);
+    std::cout << "\nИтоговое значение сверточного критерия: " << final_F;
     printControlGains(best_a, sr200);
 
     return 0;
