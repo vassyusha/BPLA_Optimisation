@@ -9,11 +9,11 @@
 
 /**
  * 3) F - Целевая функция (Fitness).
- * SOFAMA работает на максимизацию. Если исходная задача — минимизация J (ошибки),
- * мы используем сигмоидальное преобразование, чтобы перевести J в диапазон (0, 1].
+ * SOFAMA работает на максимизацию. Если исходная задача — минимизация J,
+ * мы используем преобразование (обозначен как J, сама функция - F; F - наша свертка)
  */
 double getFitness(double J) {
-    return 1.0 / (1.0 + std::exp(J)); // Чем меньше ошибка J, тем ближе Fitness к 0.5-1.0
+    return 1.0 / (1.0 + std::exp(J)); 
 }
 
 /**
@@ -30,10 +30,10 @@ std::vector<double> runSofama(const SofamaParams& p, std::function<double(const 
     double gamma_thresh = p.gamma; // Порог отсева по модели Лотки-Вольтерры
     int N_weak = 20000;         // Смещение для слабой мутации (замедляет сходимость)
 
-    // 
-    std::vector<std::vector<double>> Z(p.M, std::vector<double>(N)); 
-    std::vector<double> J_val(p.M); 
-    std::vector<double> F(p.M);     
+    // 1. Создание контейнеров для текущей популяции
+    std::vector<std::vector<double>> Z(p.M, std::vector<double>(N)); // Координаты агентов
+    std::vector<double> J_val(p.M); // Значения критерия (ошибки)
+    std::vector<double> F(p.M);     // Значения фитнеса (приспособленности) 
     
     double best_J = 1e9;            // Переменная для хранения лучшей найденной ошибки
     std::vector<double> best_z(N);  // Вектор лучшего найденного решения
@@ -42,7 +42,7 @@ std::vector<double> runSofama(const SofamaParams& p, std::function<double(const 
     for (int i = 0; i < p.M; ++i) {
         for (int j = 0; j < N; ++j) {
             
-            std::uniform_real_distribution<double> dist(A_BOUNDS[j].low, A_BOUNDS[j].high);
+            std::uniform_real_distribution<double> dist(p.bounds[j].low, p.bounds[j].high);
             Z[i][j] = dist(gen);
         }
         J_val[i] = targetFunc(Z[i]); // Считаем ошибку для созданной точки
@@ -95,8 +95,8 @@ std::vector<double> runSofama(const SofamaParams& p, std::function<double(const 
             new_agent = Z[best_idx];
             double sigma_weak = zeta_k_weak;
             for (int i = 0; i < N; ++i) {
-                double a_L = A_BOUNDS[i].low;
-                double a_R = A_BOUNDS[i].high;
+                double a_L = p.bounds[i].low;
+                double a_R = p.bounds[i].high;
                 // Генерация новой координаты через обратную функцию распределения Коши
                 double arctan_R = std::atan((a_R - new_agent[i]) / sigma_weak);
                 double arctan_L = std::atan((a_L - new_agent[i]) / sigma_weak);
@@ -136,8 +136,8 @@ std::vector<double> runSofama(const SofamaParams& p, std::function<double(const 
                 }
 
                 // Математический расчет распределения Коши, ограниченного рамками [a_L, a_R]
-                double a_L = A_BOUNDS[i].low;
-                double a_R = A_BOUNDS[i].high;
+                double a_L = p.bounds[i].low;
+                double a_R = p.bounds[i].high;
                 double arctan_R = std::atan((a_R - m_ik) / sigma_ik);
                 double arctan_L = std::atan((a_L - m_ik) / sigma_ik);
                 double B_ik = 1.0 / (arctan_R - arctan_L);

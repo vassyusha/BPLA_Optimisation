@@ -12,4 +12,14 @@ struct AeroConstants {
 using SimulationResult = std::vector<double>;
 
 SimulationResult solveSystemODE(const std::vector<double>& a, const AeroConstants& config);
+
+
+struct TimeStep {
+    double t;
+    std::vector<double> y;
+};
+typedef std::vector<TimeStep> Trajectory;
+
+Trajectory getFullTrajectory(const std::vector<double>& a, const AeroConstants& config);
+
 #endif

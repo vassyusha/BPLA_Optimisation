@@ -63,3 +63,42 @@ SimulationResult solveSystemODE(const vector<double>& a, const AeroConstants& co
     }
     return y; 
 }
+
+
+
+
+
+
+
+
+
+Trajectory getFullTrajectory(const std::vector<double>& a, const AeroConstants& config) {
+    Trajectory history;
+    std::vector<double> y = {0.0, 0.0, 0.0, 0.0, 0.0, 0.0};
+    double t = 0.0, dt = 0.01;
+    double t_T = config.t_T; // Конечное время разворота
+    while (t < t_T) {
+        history.push_back({t, y});
+        if (t + dt > t_T) dt = t_T - t; 
+
+        vector<double> k1 = derivatives(y, a, config);
+        
+        vector<double> y_k2(6);
+        for(int i=0; i<6; ++i) y_k2[i] = y[i] + 0.5 * dt * k1[i];
+        vector<double> k2 = derivatives(y_k2, a, config);
+
+        vector<double> y_k3(6);
+        for(int i=0; i<6; ++i) y_k3[i] = y[i] + 0.5 * dt * k2[i];
+        vector<double> k3 = derivatives(y_k3, a, config);
+
+        vector<double> y_k4(6);
+        for(int i=0; i<6; ++i) y_k4[i] = y[i] + dt * k3[i];
+        vector<double> k4 = derivatives(y_k4, a, config);
+
+        for (int i = 0; i < 6; ++i) {
+            y[i] += (dt / 6.0) * (k1[i] + 2.0 * k2[i] + 2.0 * k3[i] + k4[i]);
+        }
+        t += dt;
+    }
+    return history;
+}

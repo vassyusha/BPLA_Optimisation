@@ -20,4 +20,6 @@ const std::vector<Bound> A_BOUNDS = {
     {0.0, 8.0}       // a6 ∈ [0,8]
 };
 
+
+
 #endif

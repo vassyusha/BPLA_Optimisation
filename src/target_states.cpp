@@ -10,9 +10,6 @@ TargetY calculateTargetStates(const std::vector<double>& a, const AeroConstants&
     double k_gamma = config.k_gamma;
     double l_psi = config.l_psi;
 
-    // ПРИМЕЧАНИЕ: В тексте статьи формулы выглядят как "Y1*=-a6ωy*a4", без знака дроби.
-    // Однако с точки зрения физики аэродинамики деление здесь уместнее. Оставлено деление.
-    
     // (27)
     ty[0] = -(a[6] * w_y_star) / a[4];
     // (28)
